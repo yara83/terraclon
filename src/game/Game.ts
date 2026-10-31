@@ -291,7 +291,22 @@ export class Game {
 
     // Block broken!
     if (this.breakTimer * breakSpeed >= blockInfo.hardness) {
-      this.breakBlock(tileX, tileY, tile);
+      // Check if using Super Pickaxe (3x3 area break)
+      if (selected.item === ItemType.SUPER_PICKAXE) {
+        // Break 3x3 area centered on target
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const bx = tileX + dx;
+            const by = tileY + dy;
+            const bTile = this.world.getTile(bx, by);
+            if (bTile !== BlockType.AIR) {
+              this.breakBlock(bx, by, bTile);
+            }
+          }
+        }
+      } else {
+        this.breakBlock(tileX, tileY, tile);
+      }
       this.audio.playBreakSound();
       this.breakTimer = 0;
       this.player.state.breakProgress = 0;

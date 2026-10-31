@@ -19,6 +19,7 @@ export class Inventory {
     this.slots[0] = { item: ItemType.WOODEN_PICKAXE, count: 1 };
     this.slots[1] = { item: ItemType.WOODEN_AXE, count: 1 };
     this.slots[2] = { item: ItemType.WOODEN_SWORD, count: 1 };
+    this.slots[3] = { item: ItemType.SUPER_PICKAXE, count: 1 };
   }
 
   /** Add item to inventory. Returns leftover count if full. */

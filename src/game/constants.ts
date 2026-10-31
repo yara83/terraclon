@@ -157,6 +157,7 @@ export const ITEM_INFO: Record<number, ItemInfo> = {
   [ItemType.WOODEN_PICKAXE]: { type: ItemType.WOODEN_PICKAXE, name: 'Wooden Pickaxe', maxStack: 1, toolType: ToolType.PICKAXE, toolPower: 1, damage: 2, placeable: false, placeBlock: BlockType.AIR, color: '#8B5E3C', icon: '⛏️' },
   [ItemType.STONE_PICKAXE]: { type: ItemType.STONE_PICKAXE, name: 'Stone Pickaxe', maxStack: 1, toolType: ToolType.PICKAXE, toolPower: 2, damage: 3, placeable: false, placeBlock: BlockType.AIR, color: '#808080', icon: '⛏️' },
   [ItemType.IRON_PICKAXE]: { type: ItemType.IRON_PICKAXE, name: 'Iron Pickaxe', maxStack: 1, toolType: ToolType.PICKAXE, toolPower: 3, damage: 4, placeable: false, placeBlock: BlockType.AIR, color: '#C0C0C0', icon: '⛏️' },
+  [ItemType.SUPER_PICKAXE]: { type: ItemType.SUPER_PICKAXE, name: 'Super Pickaxe', maxStack: 1, toolType: ToolType.PICKAXE, toolPower: 5, damage: 6, placeable: false, placeBlock: BlockType.AIR, color: '#FF6B9D', icon: '💎' },
   [ItemType.WOODEN_SWORD]: { type: ItemType.WOODEN_SWORD, name: 'Wooden Sword', maxStack: 1, toolType: ToolType.SWORD, toolPower: 0, damage: 4, placeable: false, placeBlock: BlockType.AIR, color: '#8B5E3C', icon: '🗡️' },
   [ItemType.STONE_SWORD]: { type: ItemType.STONE_SWORD, name: 'Stone Sword', maxStack: 1, toolType: ToolType.SWORD, toolPower: 0, damage: 6, placeable: false, placeBlock: BlockType.AIR, color: '#808080', icon: '🗡️' },
   [ItemType.IRON_SWORD]: { type: ItemType.IRON_SWORD, name: 'Iron Sword', maxStack: 1, toolType: ToolType.SWORD, toolPower: 0, damage: 8, placeable: false, placeBlock: BlockType.AIR, color: '#C0C0C0', icon: '🗡️' },
@@ -178,4 +179,5 @@ export const RECIPES: CraftingRecipe[] = [
   { result: { item: ItemType.IRON_PICKAXE, count: 1 }, ingredients: [{ item: ItemType.IRON_ORE, count: 3 }, { item: ItemType.WOOD, count: 2 }] },
   { result: { item: ItemType.IRON_SWORD, count: 1 }, ingredients: [{ item: ItemType.IRON_ORE, count: 2 }, { item: ItemType.WOOD, count: 1 }] },
   { result: { item: ItemType.IRON_AXE, count: 1 }, ingredients: [{ item: ItemType.IRON_ORE, count: 3 }, { item: ItemType.WOOD, count: 2 }] },
+  { result: { item: ItemType.SUPER_PICKAXE, count: 1 }, ingredients: [{ item: ItemType.DIAMOND_ORE, count: 5 }, { item: ItemType.IRON_ORE, count: 3 }, { item: ItemType.WOOD, count: 2 }] },
 ];
