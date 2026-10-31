@@ -10,6 +10,8 @@ import { Renderer } from './renderer';
 import { InputHandler } from './input';
 import { Inventory } from './inventory';
 import { LightingSystem } from './lighting';
+import { AudioSystem } from './audio';
+import { EnemyManager, Enemy } from './enemies';
 import {
   TILE_SIZE, BREAK_REACH, PLACE_REACH, BLOCK_INFO, ITEM_INFO,
   PICKUP_DELAY, PICKUP_RANGE, ITEM_DROP_LIFETIME
@@ -31,6 +33,10 @@ export class Game {
   private deltaTime: number = 0;
   private running: boolean = false;
   private animFrameId: number = 0;
+  private audio: AudioSystem;
+  private enemyManager: EnemyManager;
+  private lastJumpState: boolean = false;
+  private swordCooldown: number = 0;
 
   // UI State
   private showInventory: boolean = false;
@@ -55,6 +61,14 @@ export class Game {
     this.input = new InputHandler(canvas);
     this.inventory = new Inventory();
     this.lighting = new LightingSystem(this.world);
+    this.audio = new AudioSystem();
+    this.enemyManager = new EnemyManager();
+
+    // Initialize audio on first user interaction
+    canvas.addEventListener('click', () => {
+      this.audio.init();
+      this.audio.resume();
+    }, { once: true });
 
     // Calculate initial lighting
     this.lighting.calculateLighting();
@@ -130,7 +144,14 @@ export class Game {
 
     // Update player
     const movement = this.input.getMovementInput();
+    const wasOnGround = this.player.state.onGround;
     this.player.update(this.world, movement);
+
+    // Jump sound detection
+    if (!wasOnGround && this.player.state.isJumping && !this.lastJumpState) {
+      this.audio.playJumpSound();
+    }
+    this.lastJumpState = this.player.state.isJumping;
 
     // Update camera
     this.camera.follow(this.player.getCenterX(), this.player.getCenterY());
@@ -143,10 +164,14 @@ export class Game {
     this.input.state.mouseTileX = tilePos.x;
     this.input.state.mouseTileY = tilePos.y;
 
-    // Handle block breaking (left click)
-    if (this.input.state.mouseDown && !this.showInventory && !this.showCrafting) {
+    // Handle block breaking (left click) - only if not using a sword
+    const selectedForBreak = this.inventory.getSelectedItem(this.player.state.selectedSlot);
+    const selectedItemInfoForBreak = ITEM_INFO[selectedForBreak.item];
+    const hasSwordEquipped = selectedItemInfoForBreak && selectedItemInfoForBreak.toolType === ToolType.SWORD;
+
+    if (this.input.state.mouseDown && !this.showInventory && !this.showCrafting && !hasSwordEquipped) {
       this.handleBlockBreaking();
-    } else {
+    } else if (!hasSwordEquipped) {
       this.player.state.breaking = false;
       this.player.state.breakProgress = 0;
       this.player.state.breakTarget = null;
@@ -156,6 +181,45 @@ export class Game {
     // Handle block placing (right click)
     if (this.input.state.rightMouseDown && !this.showInventory && !this.showCrafting) {
       this.handleBlockPlacing();
+    }
+
+    // Update enemies
+    const enemyAttacks = this.enemyManager.update(this.world, this.player.state, this.deltaTime);
+    for (const attack of enemyAttacks) {
+      this.player.state.health = Math.max(0, this.player.state.health - attack.damage);
+      this.player.state.vx += attack.knockbackX;
+      this.player.state.vy = -3;
+    }
+
+    // Health regeneration (when not moving and not in combat)
+    if (this.player.state.onGround && Math.abs(this.player.state.vx) < 0.5 && enemyAttacks.length === 0) {
+      this.player.state.health = Math.min(
+        this.player.state.maxHealth,
+        this.player.state.health + 0.02 * dt
+      );
+    }
+
+    // Death and respawn
+    if (this.player.state.health <= 0) {
+      this.player.state.health = this.player.state.maxHealth;
+      this.player.state.x = this.world.data.spawnX * TILE_SIZE;
+      this.player.state.y = (this.world.data.spawnY - 3) * TILE_SIZE;
+      this.player.state.vx = 0;
+      this.player.state.vy = 0;
+    }
+
+    // Handle sword attack (left click with sword equipped)
+    this.swordCooldown = Math.max(0, this.swordCooldown - this.deltaTime);
+    if (this.input.state.mouseDown && !this.showInventory && !this.showCrafting && this.swordCooldown <= 0) {
+      const selected = this.inventory.getSelectedItem(this.player.state.selectedSlot);
+      const itemInfo = ITEM_INFO[selected.item];
+      if (itemInfo && itemInfo.toolType === ToolType.SWORD) {
+        const worldPos = this.camera.screenToWorld(this.input.state.mouseX, this.input.state.mouseY);
+        if (this.enemyManager.damageAt(worldPos.x, worldPos.y, itemInfo.damage)) {
+          this.audio.playBreakSound(); // Use break sound as hit sound
+          this.swordCooldown = 400; // Attack cooldown
+        }
+      }
     }
 
     // Update dropped items
@@ -228,6 +292,7 @@ export class Game {
     // Block broken!
     if (this.breakTimer * breakSpeed >= blockInfo.hardness) {
       this.breakBlock(tileX, tileY, tile);
+      this.audio.playBreakSound();
       this.breakTimer = 0;
       this.player.state.breakProgress = 0;
       this.player.state.breakTarget = null;
@@ -300,6 +365,7 @@ export class Game {
     // Place block
     this.world.setTile(tileX, tileY, itemInfo.placeBlock);
     this.inventory.removeItem(selected.item, 1);
+    this.audio.playPlaceSound();
 
     // Update lighting for torches
     if (itemInfo.placeBlock === BlockType.TORCH) {
@@ -385,6 +451,7 @@ export class Game {
             item.count = added;
           } else {
             this.droppedItems.splice(i, 1);
+            this.audio.playPickupSound();
             continue;
           }
         }
@@ -434,6 +501,9 @@ export class Game {
     // Dropped items
     this.renderer.renderDroppedItems(this.droppedItems, this.camera);
 
+    // Enemies
+    this.renderer.renderEnemies(this.enemyManager.enemies, this.camera);
+
     // Player
     this.renderer.renderPlayer(this.player, this.camera);
 
@@ -478,8 +548,15 @@ export class Game {
   craftItem(recipeIndex: number): void {
     const recipes = this.inventory.getAvailableRecipes();
     if (recipeIndex >= 0 && recipeIndex < recipes.length) {
-      this.inventory.craft(recipes[recipeIndex]);
+      if (this.inventory.craft(recipes[recipeIndex])) {
+        this.audio.playCraftSound();
+      }
     }
+  }
+
+  /** Toggle audio mute */
+  toggleMute(): boolean {
+    return this.audio.toggleMute();
   }
 
   /** Toggle inventory visibility */
