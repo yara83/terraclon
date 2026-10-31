@@ -241,7 +241,7 @@ export class World {
   /** Check if a tile is solid */
   isSolid(x: number, y: number): boolean {
     const tile = this.getTile(x, y);
-    return tile !== BlockType.AIR && tile !== BlockType.LEAVES && tile !== BlockType.TORCH && tile !== BlockType.WATER;
+    return tile !== BlockType.AIR && tile !== BlockType.LEAVES && tile !== BlockType.TORCH && tile !== BlockType.WATER && tile !== BlockType.WOOD;
   }
 
   /** Get light level at position */
