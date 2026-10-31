@@ -73,9 +73,9 @@ export const BLOCK_INFO: Record<number, BlockInfo> = {
     lightEmission: 0, transparent: false
   },
   [BlockType.WOOD]: {
-    type: BlockType.WOOD, name: 'Wood', solid: true, hardness: 800,
+    type: BlockType.WOOD, name: 'Wood', solid: false, hardness: 800,
     color: '#6D4C2A', dropItem: ItemType.WOOD, minTool: ToolType.AXE,
-    lightEmission: 0, transparent: false
+    lightEmission: 0, transparent: true
   },
   [BlockType.LEAVES]: {
     type: BlockType.LEAVES, name: 'Leaves', solid: false, hardness: 200,
